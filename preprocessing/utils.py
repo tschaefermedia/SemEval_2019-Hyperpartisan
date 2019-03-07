@@ -4,6 +4,7 @@ import pandas as pd
 import xml.etree.ElementTree as ET
 import re
 from nltk.corpus import stopwords
+from urllib.parse import urlparse
 
 pd.set_option('display.max_columns', None)
 
@@ -57,9 +58,16 @@ def iter_truth(data):
             yield doc_dict
 
 
+def clean_truth(df):
+    for index, row in df.iterrows():
+        uri = urlparse(row.url)
+        row.url = '{uri.scheme}://{uri.netloc}/'.format(uri=uri)
+    return df
+
+
 def parse_xml_files(data, truth, save, outfile):
     columns_data = ['id', 'published-at', 'title', 'content']
-    columns_truth = ['id', 'hyp', 'bias', 'url']
+    columns_truth = ['id', 'hyperpartisan', 'bias', 'url']
     bias = {'left': -1, 'left-center': -0.5, 'least': 0, 'right-center': 0.5, 'right': 1}
     data_df = pd.DataFrame(columns=columns_data)
     truth_df = pd.DataFrame(columns=columns_truth)
@@ -76,8 +84,10 @@ def parse_xml_files(data, truth, save, outfile):
             df = pd.DataFrame.from_records(list(iter_truth(f)), columns=columns_truth)
             truth_df = truth_df.append(df, sort=True)
             print("Finished file: " + file)
-    print(data_df.head())
-    print(truth_df.head())
+    truth_df = clean_truth(truth_df)
+    print(data_df)
+    print(truth_df)
+    result = pd.merge(data_df, truth_df, on='id')
     if save:
-        data_df.to_csv(outfile)
+        result.to_csv(outfile)
 

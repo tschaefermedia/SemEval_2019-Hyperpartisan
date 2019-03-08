@@ -1,5 +1,5 @@
 import string
-
+import numpy as np
 import pandas as pd
 import xml.etree.ElementTree as ET
 import re
@@ -58,10 +58,13 @@ def iter_truth(data):
             yield doc_dict
 
 
-def clean_truth(df):
+def clean_truth(df, bias_values):
     for index, row in df.iterrows():
         uri = urlparse(row.url)
         row.url = '{uri.scheme}://{uri.netloc}/'.format(uri=uri)
+        if not np.isnan(row.bias) and row.bias not in ['', "", "NaN"]:
+            row.bias = bias_values[row.bias]
+    df.hyperpartisan.replace(['true', 'false'], [1, 0], inplace=True)
     return df
 
 
@@ -84,7 +87,7 @@ def parse_xml_files(data, truth, save, outfile):
             df = pd.DataFrame.from_records(list(iter_truth(f)), columns=columns_truth)
             truth_df = truth_df.append(df, sort=True)
             print("Finished file: " + file)
-    truth_df = clean_truth(truth_df)
+    truth_df = clean_truth(truth_df, bias)
     print(data_df)
     print(truth_df)
     result = pd.merge(data_df, truth_df, on='id')

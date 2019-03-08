@@ -1,11 +1,12 @@
 import argparse
 import os
+import time
 import utils
 
 default_input_dir = "../data"
 
 if __name__ == "__main__":
-
+    start = time.time()
     parser = argparse.ArgumentParser()
     parser.add_argument("--csv", default=None, type=bool, required=True, help="create csv files from articles")
     parser.add_argument("--all", default=None, type=bool, required=True, help="convert all files")
@@ -23,3 +24,5 @@ if __name__ == "__main__":
                 truth_files.append(str(os.path.join(root, file))) if 'ground-truth' in file else source_files.append(
                     str(os.path.join(root, file)))
     utils.parse_xml_files(source_files, truth_files, args.csv, args.out + "\\processed.csv")
+    end = time.time()
+    print(end - start)
